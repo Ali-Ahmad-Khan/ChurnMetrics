@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "client/package.json", "use": "@vercel/vite" },
+    { "src": "server/app.js", "use": "@vercel/node" },
+    { "src": "api/main.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/api/(auth|customers|predictions|dashboard|whatif|admin|health)(.*)", "dest": "/server/app.js" },
+    { "src": "/fastapi/(.*)", "dest": "/api/main.py" },
+    { "src": "/(.*)", "dest": "/client/dist/$1" }
+  ]
+}
