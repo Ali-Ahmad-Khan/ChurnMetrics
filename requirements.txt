@@ -1,0 +1,17 @@
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+joblib
+fastapi
+uvicorn[standard]
+pydantic
+httpx
+pytest
+pytest-asyncio
+xgboost
+shap
+python-dotenv
+pymongo
+motor

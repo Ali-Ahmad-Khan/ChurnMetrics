@@ -1,0 +1,102 @@
+body {
+  background-color: #1a1a2e !important;
+  color: #e0e0e0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.bg-dark {
+  background-color: #1a1a2e !important;
+}
+
+.card.bg-dark {
+  background-color: #16213e !important;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card.bg-dark:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(13, 202, 240, 0.1);
+}
+
+.card-header {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.navbar {
+  background-color: #0f3460 !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+.nav-link {
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 8px;
+}
+
+.nav-link:hover {
+  background-color: rgba(13, 202, 240, 0.1);
+}
+
+.nav-link.active {
+  background-color: rgba(13, 202, 240, 0.15) !important;
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-info:hover {
+  background: linear-gradient(135deg, #0aa2c0, #088ba3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(13, 202, 240, 0.3);
+}
+
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.table-dark {
+  --bs-table-bg: transparent;
+  --bs-table-hover-bg: rgba(13, 202, 240, 0.05);
+}
+
+.form-control, .form-select {
+  background-color: #0d1b2a !important;
+  border-color: #2a3f5f !important;
+  color: #e0e0e0 !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #0dcaf0 !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 202, 240, 0.15) !important;
+}
+
+.progress {
+  background-color: #2a3f5f;
+  border-radius: 10px;
+}
+
+.spinner-border.text-info {
+  width: 3rem;
+  height: 3rem;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3f5f;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a5f8f;
+}
