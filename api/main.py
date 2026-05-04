@@ -136,16 +136,13 @@ def build_dataframe(customer: CustomerInput) -> pd.DataFrame:
 
 def normalize_input(df: pd.DataFrame) -> pd.DataFrame:
     """Apply the same normalization as in preprocessing for consistency."""
+    from preprocess import normalize_service_categories, convert_total_charges
     df = df.copy()
-    internet_cols = [
-        "OnlineSecurity", "OnlineBackup", "DeviceProtection",
-        "TechSupport", "StreamingTV", "StreamingMovies"
-    ]
-    for col in internet_cols:
-        if col in df.columns:
-            df[col] = df[col].replace("No internet service", "No")
-    if "MultipleLines" in df.columns:
-        df["MultipleLines"] = df["MultipleLines"].replace("No phone service", "No")
+    
+    # Use the centralized logic from src/preprocess.py
+    df = normalize_service_categories(df)
+    df = convert_total_charges(df)
+    
     return df
 
 def cascade_predict_single(df: pd.DataFrame):
