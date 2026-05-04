@@ -14,7 +14,7 @@ const authRoutes = require("./routes/authRoutes");
 const { protect } = require("./middleware/auth");
 
 const app = express();
-const PORT = process.env.EXPRESS_PORT || process.env.PORT || 5001;
+const PORT = process.env.PORT || process.env.EXPRESS_PORT || 5001;
 
 // ── Middleware ──
 app.use(cors());
