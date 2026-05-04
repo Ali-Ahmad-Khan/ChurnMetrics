@@ -1,5 +1,6 @@
 import joblib
 import os
+import urllib.request
 
 # This module holds both cascade models in memory, loaded once at API startup
 _store = {
@@ -13,16 +14,32 @@ _store = {
 
 def load_models_at_startup(stage1_path: str, stage2_path: str, optimal_threshold: float = 0.5):
     """Load both cascade models at startup."""
-    # Stage 1: Logistic Regression (required)
+    os.makedirs(os.path.dirname(os.path.abspath(stage1_path)), exist_ok=True)
+    
+    # Download Stage 1 model if missing
     abs1 = os.path.abspath(stage1_path)
     if not os.path.exists(abs1):
-        raise FileNotFoundError(f"Stage 1 model not found: {abs1}")
+        print(f"[model_loader] Downloading Stage 1 model from Hugging Face to {abs1}...")
+        try:
+            urllib.request.urlretrieve("https://huggingface.co/datasets/AliAhmadKhan/ChurnMetrics-Models/resolve/main/logistic_model.pkl", abs1)
+        except Exception as e:
+            raise FileNotFoundError(f"Failed to download Stage 1 model: {e}")
+            
+    if not os.path.exists(abs1):
+        raise FileNotFoundError(f"Stage 1 model not found and could not be downloaded: {abs1}")
     _store["stage1"] = joblib.load(abs1)
     _store["stage1_path"] = abs1
     print(f"[model_loader] Stage 1 (Logistic) loaded from {abs1}")
 
-    # Stage 2: XGBoost (optional, for cascade refinement)
+    # Download Stage 2 model if missing
     abs2 = os.path.abspath(stage2_path)
+    if not os.path.exists(abs2):
+        print(f"[model_loader] Downloading Stage 2 model from Hugging Face to {abs2}...")
+        try:
+            urllib.request.urlretrieve("https://huggingface.co/datasets/AliAhmadKhan/ChurnMetrics-Models/resolve/main/xgboost_model.pkl", abs2)
+        except Exception as e:
+            print(f"[model_loader] Failed to download Stage 2 model: {e}")
+
     if os.path.exists(abs2):
         _store["stage2"] = joblib.load(abs2)
         _store["stage2_path"] = abs2
