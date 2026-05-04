@@ -29,12 +29,13 @@ RUN cd client && npm run build
 # Set environment variables
 ENV NODE_ENV=production
 ENV FASTAPI_URL=http://127.0.0.1:8000
+ENV PORT=7860
 
 # Make the start script executable
 RUN chmod +x start.sh
 
-# Expose the Express port
-EXPOSE 5001
+# Expose the standard Hugging Face port
+EXPOSE 7860
 
 # Start both servers
 CMD ["./start.sh"]
