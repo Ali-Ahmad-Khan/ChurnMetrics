@@ -38,7 +38,7 @@ from llm import generate_rescue_plan
 # ── Model paths ──
 STAGE1_PATH = os.path.join(PROJECT_ROOT, "models", "logistic_model.pkl")
 STAGE2_PATH = os.path.join(PROJECT_ROOT, "models", "xgboost_model.pkl")
-OPTIMAL_THRESHOLD = 0.3755  # From pipeline run
+METADATA_PATH = os.path.join(PROJECT_ROOT, "models", "metadata.json")
 
 # Drift detector (initialized after model load)
 _drift_detector = None
@@ -48,7 +48,15 @@ _drift_detector = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _drift_detector
-    load_models_at_startup(STAGE1_PATH, STAGE2_PATH, OPTIMAL_THRESHOLD)
+    
+    import json
+    optimal_threshold = 0.5
+    if os.path.exists(METADATA_PATH):
+        with open(METADATA_PATH, "r") as f:
+            metadata = json.load(f)
+            optimal_threshold = metadata.get("optimal_threshold", 0.5)
+            
+    load_models_at_startup(STAGE1_PATH, STAGE2_PATH, optimal_threshold)
 
     # Initialize drift detector with training data statistics
     try:
