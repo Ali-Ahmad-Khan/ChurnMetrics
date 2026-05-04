@@ -2,7 +2,7 @@
 
 
 LOW_THRESHOLD = 0.30
-HIGH_THRESHOLD = 0.70
+HIGH_THRESHOLD = 0.80
 
 # Human-in-the-loop review band (boundary cases that need manual inspection)
 REVIEW_LOWER = 0.45

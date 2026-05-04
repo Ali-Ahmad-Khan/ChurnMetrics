@@ -47,6 +47,16 @@ def convert_total_charges(df: pd.DataFrame) -> pd.DataFrame:
         df["TotalCharges"] = df["TotalCharges"].astype(str).str.strip()
         df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce").astype(float)
 
+    # Adding interaction features for better precision
+    if "tenure" in df.columns and "MonthlyCharges" in df.columns:
+        df["Tenure_Monthly"] = df["tenure"] * df["MonthlyCharges"]
+        
+    if "Contract" in df.columns and "MonthlyCharges" in df.columns:
+        # Simple encoding for contract to use in interaction
+        contract_map = {"Month-to-month": 1, "One year": 12, "Two year": 24}
+        df["Contract_Value"] = df["Contract"].map(contract_map)
+        df["Contract_Monthly"] = df["Contract_Value"] * df["MonthlyCharges"]
+
     return df
 
 

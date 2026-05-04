@@ -34,9 +34,19 @@ def main():
 
     # ── Stage 2: XGBoost (refinement for uncertain cases) ──
     print("\n" + "=" * 60)
-    print("Stage 2: Training XGBoost (refinement model)")
+    print("Stage 2: Training XGBoost (refinement model - Local Expert)")
     print("=" * 60)
-    xgb_model = train_xgboost(X_train, y_train, preprocessor)
+    
+    # Identify hard cases from Stage 1 for targeted refinement training
+    train_stage1_probs = log_model.predict_proba(X_train)[:, 1]
+    uncertain_mask = (train_stage1_probs > 0.2) & (train_stage1_probs < 0.8)
+    
+    X_train_xgb = X_train[uncertain_mask]
+    y_train_xgb = y_train[uncertain_mask]
+    
+    print(f"Training Stage 2 on {len(X_train_xgb)} uncertain samples (out of {len(X_train)} total)")
+    
+    xgb_model = train_xgboost(X_train_xgb, y_train_xgb, preprocessor)
 
     print("\nStage 2 — Standalone Validation Results:")
     xgb_metrics = evaluate(xgb_model, X_val, y_val)
