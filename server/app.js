@@ -52,11 +52,18 @@ app.use(errorHandler);
 
 // ── Start ──
 const start = async () => {
-  await connectDB();
+  // Start listening immediately to pass Hugging Face port health checks
   app.listen(PORT, () => {
-    console.log(`[Express] Server running on http://localhost:${PORT}`);
+    console.log(`[Express] Server running on http://0.0.0.0:${PORT}`);
     console.log(`[Express] API endpoints available at /api/*`);
   });
+
+  // Connect to DB in the background
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("[Express] Failed to connect to DB during startup", err);
+  }
 };
 
 start();

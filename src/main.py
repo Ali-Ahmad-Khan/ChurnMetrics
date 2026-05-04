@@ -114,10 +114,13 @@ def main():
 
     test_metrics = evaluate_with_arrays(y_test, test_preds, test_cascade_probs)
 
+    from serialize import save_metadata
+    save_metadata({"optimal_threshold": optimal_threshold})
+
     print("\n✓ Pipeline complete. Models saved to models/ directory.")
     print(f"  logistic_model.pkl — Stage 1 (Logistic Regression)")
     print(f"  xgboost_model.pkl  — Stage 2 (XGBoost refinement)")
-    print(f"  Optimal threshold: {optimal_threshold:.4f}")
+    print(f"  Optimal threshold: {optimal_threshold:.4f} (saved to metadata.json)")
 
     return {
         "log_metrics": log_metrics,
