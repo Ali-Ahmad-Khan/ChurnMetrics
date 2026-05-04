@@ -2,7 +2,7 @@ import os
 import json
 import re
 import httpx
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,10 +14,11 @@ LOCAL_MODEL = "qwen2.5:0.5b"  # Efficiency King (extremely lightweight)
 # Setup Gemini Fallback
 api_key = os.getenv("GOOGLE_API_KEY")
 if api_key and api_key != "your_gemini_api_key_here":
-    genai.configure(api_key=api_key)
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=api_key)
+    gemini_model_name = "gemini-1.5-flash"
 else:
-    gemini_model = None
+    client = None
+    gemini_model_name = None
 
 def _generate_with_ollama(prompt):
     """Try generating with local Ollama instance"""
@@ -41,10 +42,13 @@ def _generate_with_ollama(prompt):
 
 def _generate_with_gemini(prompt):
     """Fallback to Gemini cloud API"""
-    if not gemini_model:
+    if not client or not gemini_model_name:
         return None
     try:
-        response = gemini_model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=gemini_model_name,
+            contents=prompt
+        )
         text = response.text
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:

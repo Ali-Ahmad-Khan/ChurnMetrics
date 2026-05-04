@@ -15,4 +15,4 @@ shap
 python-dotenv
 pymongo
 motor
-google-generativeai
+google-genai

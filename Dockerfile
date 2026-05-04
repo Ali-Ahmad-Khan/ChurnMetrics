@@ -24,7 +24,7 @@ RUN cd server && npm install
 COPY . .
 
 # Build the React frontend
-RUN cd client && npm run build
+RUN cd client && VITE_API_BASE=/api npm run build
 
 # Set environment variables
 ENV NODE_ENV=production
