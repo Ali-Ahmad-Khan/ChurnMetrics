@@ -94,10 +94,10 @@ cd ../client && npm install && npm run dev
 
 ---
 
-## 🖼️ Preview
+## 🖼️ Mockup Preview (FUTURE WORKS)
 ![Dashboard Mockup](client/public/dashboard-mockup-final.png)
 
 ---
 
 ## 📝 License
-Built with ❤️ by the ChurnMetrics Team. Distributed under the MIT License.
+Distributed under the MIT License.
