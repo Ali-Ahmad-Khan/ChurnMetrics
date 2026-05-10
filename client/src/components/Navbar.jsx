@@ -1,8 +1,11 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ThemeToggle from "./ThemeToggle";
+import "./Navbar.css";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: "bi-speedometer2" },
+  { to: "/dashboard", label: "Dashboard", icon: "bi-speedometer2" },
   { to: "/customers", label: "Customers", icon: "bi-people" },
   { to: "/predict", label: "Predict", icon: "bi-cpu" },
   { to: "/predictions", label: "History", icon: "bi-clock-history" },
@@ -13,70 +16,83 @@ const navItems = [
 ];
 
 export default function Navbar() {
-  const { user, logout, isAdmin } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLanding = location.pathname === "/";
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const closeMenu = () => setIsOpen(false);
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary fixed-top">
-      <div className="container-fluid">
-        <NavLink className="navbar-brand d-flex align-items-center gap-2 fw-bold" to="/">
-          <i className="bi bi-activity text-info fs-4"></i>
-          <span className="text-info">Churn</span>
-          <span className="text-white">Metrics</span>
+    <nav className={`navbar-custom ${isOpen ? "menu-open" : ""}`}>
+      <div className="navbar-container">
+        <NavLink className="navbar-brand-custom" to="/" onClick={closeMenu}>
+          <i className="bi bi-activity brand-icon"></i>
+          <span>Churn<span style={{ color: 'var(--text-secondary)' }}>Metrics</span></span>
         </NavLink>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-        >
-          <span className="navbar-toggler-icon"></span>
+        {/* Hamburger Toggle */}
+        <button className="menu-toggle d-lg-none" onClick={toggleMenu} aria-label="Toggle navigation">
+          <i className={`bi ${isOpen ? "bi-x-lg" : "bi-list"}`}></i>
         </button>
 
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav me-auto">
-            {navItems.map((item) => (
-              <li className="nav-item" key={item.to}>
-                <NavLink
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `nav-link px-3 ${isActive ? "active text-info" : ""}`
-                  }
-                  end={item.to === "/"}
-                >
-                  <i className={`bi ${item.icon} me-1`}></i>
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-
-          {/* User info + logout */}
-          {user && (
-            <div className="d-flex align-items-center gap-2 ms-3">
-              <span className="text-secondary small d-none d-lg-inline">
-                <i className="bi bi-person-circle me-1"></i>
-                {user.name}
-                {isAdmin && (
-                  <span className="badge bg-info ms-1" style={{ fontSize: "0.6rem" }}>Admin</span>
-                )}
-              </span>
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                onClick={handleLogout}
-                title="Sign out"
+        <div className={`navbar-menu ${isOpen ? "active" : ""}`}>
+          <div className="navbar-links">
+            {!isLanding && navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `nav-link-custom ${isActive ? "active" : ""}`
+                }
               >
-                <i className="bi bi-box-arrow-right me-1"></i>
-                <span className="d-none d-lg-inline">Sign Out</span>
-              </button>
-            </div>
-          )}
+                <i className={`bi ${item.icon}`}></i>
+                <span className="ms-1">{item.label}</span>
+              </NavLink>
+            ))}
+            {isLanding && (
+              <>
+                <a href="#features" className="nav-link-custom" onClick={closeMenu}>Features</a>
+                <a href="#how-it-works" className="nav-link-custom" onClick={closeMenu}>How It Works</a>
+                <a href="#faq" className="nav-link-custom" onClick={closeMenu}>FAQ</a>
+              </>
+            )}
+          </div>
+
+          <div className="navbar-actions">
+            <ThemeToggle />
+            
+            {user ? (
+              <div className="user-info">
+                <span className="user-name">
+                  <i className="bi bi-person-circle me-1"></i>
+                  {user.name}
+                </span>
+                <div className="vr d-none d-lg-block mx-2" style={{ height: '1.25rem', opacity: 0.2 }}></div>
+                <button className="btn-signout" onClick={() => { handleLogout(); closeMenu(); }}>
+                  <i className="bi bi-box-arrow-right me-1 d-lg-none"></i>
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="auth-buttons">
+                <NavLink to="/login" className="btn-ghost-custom" onClick={closeMenu}>
+                  Login
+                </NavLink>
+                <NavLink to="/login" className="btn-primary-custom" onClick={closeMenu}>
+                  Get Started
+                </NavLink>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>

@@ -1,0 +1,243 @@
+.navbar-custom {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--bg-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.navbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem; /* Reduced gap */
+}
+
+.navbar-brand-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.brand-icon {
+  color: var(--accent);
+  font-size: 1.6rem;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  justify-content: center;
+  min-width: 0; /* Allow shrinking */
+}
+
+.nav-link-custom {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.nav-link-custom:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-2);
+}
+
+.nav-link-custom.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg-surface-2);
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  max-width: 150px; /* Reduced max-width */
+  min-width: 0;
+}
+
+.user-info span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* HAMBURGER & MOBILE MENU */
+.menu-toggle {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  z-index: 1001;
+}
+
+.menu-toggle:active {
+  transform: scale(0.9);
+}
+
+.navbar-menu {
+  display: contents;
+}
+
+.user-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.88rem;
+}
+
+.btn-signout {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-signout:hover {
+  background: var(--accent-soft);
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 991px) {
+  .navbar-container {
+    padding: 0.25rem 0;
+  }
+
+  .navbar-menu {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    padding: 5rem 1.5rem 2rem;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+
+  .navbar-menu.active {
+    right: 0;
+  }
+
+  .navbar-links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border: none;
+    padding: 0;
+  }
+
+  .nav-link-custom {
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.8rem 1rem;
+  }
+
+  .nav-link-custom span {
+    display: inline !important;
+  }
+
+  .navbar-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 1.5rem;
+    margin-top: auto;
+  }
+
+  .user-info {
+    width: 100%;
+    max-width: none;
+    flex-direction: row;
+    justify-content: space-between;
+    background: var(--bg-surface-2);
+    padding: 0.75rem 1rem;
+  }
+
+  .auth-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .auth-buttons .btn-ghost-custom,
+  .auth-buttons .btn-primary-custom {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .menu-toggle {
+    display: none;
+  }
+}
+
+/* DESKTOP RESPONSIVENESS */
+@media (max-width: 1200px) and (min-width: 992px) {
+  .nav-link-custom {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  .nav-link-custom span {
+    display: none;
+  }
+  .nav-link-custom i {
+    font-size: 1.2rem;
+  }
+}
+

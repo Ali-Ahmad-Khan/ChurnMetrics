@@ -1,6 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const dotenv = require("dotenv");
+
+// Load env variables from root .env
+dotenv.config({ path: path.join(__dirname, "../.env") });
+
 const connectDB = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
 
@@ -52,18 +57,18 @@ app.use(errorHandler);
 
 // ── Start ──
 const start = async () => {
-  // Start listening immediately to pass Hugging Face port health checks
-  app.listen(PORT, () => {
-    console.log(`[Express] Server running on http://0.0.0.0:${PORT}`);
-    console.log(`[Express] API endpoints available at /api/*`);
-  });
-
-  // Connect to DB in the background
+  // Connect to DB first to ensure models are ready, but don't block forever if it's down
+  // (Standard practice for local dev; in production you might want to block)
   try {
     await connectDB();
   } catch (err) {
-    console.error("[Express] Failed to connect to DB during startup", err);
+    console.error("[Express] Critical: Database connection failed. System may be unstable.", err);
   }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Express] Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[Express] API endpoints available at /api/*`);
+  });
 };
 
 start();

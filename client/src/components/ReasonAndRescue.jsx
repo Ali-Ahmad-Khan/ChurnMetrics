@@ -1,86 +1,123 @@
-import React from "react";
+import { useState } from "react";
+import { deployCampaign } from "../services/api";
 
-const ReasonAndRescue = ({ topFeatures, rescuePlan, churnPrediction }) => {
-  if (!churnPrediction) return null;
+export default function ReasonAndRescue({ prediction }) {
+  const [loading, setLoading] = useState(false);
+  const [deployed, setDeployed] = useState(false);
+  const [error, setError] = useState(null);
+
+  if (!prediction) return null;
+
+  const handleDeploy = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await deployCampaign({
+        customerID: prediction.customerID,
+        strategy: prediction.riskLabel || "High Risk",
+        rescueAction: prediction.rescuePlan?.strategy || (prediction.strategy || '').split('\n')[0] || "Standard Retention offer"
+      });
+      setDeployed(true);
+      setTimeout(() => setDeployed(false), 3000); // Reset after 3 seconds
+    } catch (err) {
+      console.error("Campaign deployment failed:", err);
+      setError("Failed to deploy campaign. Check backend logs.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="card shadow-sm border-0 mb-4 overflow-hidden" style={{ borderRadius: "16px", background: "rgba(255, 255, 255, 0.05)", backdropFilter: "blur(10px)" }}>
-      <div className="card-header bg-danger bg-opacity-10 border-0 py-3">
-        <h5 className="mb-0 text-danger d-flex align-items-center">
-          <i className="bi bi-shield-exclamation me-2"></i>
-          Reason & Rescue Strategy
-        </h5>
-      </div>
-      <div className="card-body p-4 text-light">
-        <div className="row g-4">
-          {/* Reasons Section */}
-          <div className="col-md-5">
-            <h6 className="text-uppercase text-secondary small fw-bold mb-3">Top Churn Drivers (SHAP)</h6>
-            <div className="d-flex flex-column gap-2">
-              {topFeatures && topFeatures.length > 0 ? (
-                topFeatures.slice(0, 3).map((feat, idx) => (
-                  <div key={idx} className="p-2 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <span className="small text-truncate me-2">{feat.feature.replace(/_/g, ' ')}</span>
-                      <span className="badge bg-danger bg-opacity-25 text-danger">+{Math.round(feat.impact * 100)}%</span>
-                    </div>
-                    <div className="progress" style={{ height: "4px", backgroundColor: "rgba(255,255,255,0.1)" }}>
-                      <div 
-                        className="progress-bar bg-danger" 
-                        role="progressbar" 
-                        style={{ width: `${Math.min(100, feat.impact * 100)}%` }}
-                      ></div>
+    <div className="row g-4">
+      <div className="col-md-6">
+        <div className="card-custom h-100">
+          <div className="panel-header">
+            <h2 className="panel-title">
+              <i className="bi bi-search me-2 text-accent" style={{ color: 'var(--accent)' }}></i>
+              AI Reasoning
+            </h2>
+          </div>
+          <p className="text-secondary small mb-4">Underlying factors contributing to the current risk score.</p>
+          
+            <div className="d-flex flex-column gap-3">
+              {(() => {
+                const raw = prediction.rescuePlan?.plan || prediction.explanation || prediction.reasoning;
+                const text = typeof raw === 'string' ? raw : null;
+                return text?.split('\n').filter(l => l.trim()).map((line, i) => (
+                  <div key={i} className="d-flex gap-3 align-items-start">
+                    <div className="mt-1" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }}></div>
+                    <div className="small" style={{ lineHeight: 1.5, color: 'var(--text-primary)' }}>{line.replace(/^-\s*/, '')}</div>
+                  </div>
+                ));
+              })()}
+              {!(prediction.rescuePlan?.plan || prediction.explanation || prediction.reasoning) && prediction.topFeatures?.length > 0 && (
+                prediction.topFeatures.map((f, i) => (
+                  <div key={i} className="d-flex gap-3 align-items-start">
+                    <div className="mt-1" style={{ width: 6, height: 6, borderRadius: '50%', background: f.shapValue > 0 ? 'var(--danger)' : 'var(--success)', flexShrink: 0 }}></div>
+                    <div className="small" style={{ lineHeight: 1.5, color: 'var(--text-primary)' }}>
+                      <strong>{f.feature}</strong>: {f.shapValue > 0 ? 'Increases' : 'Decreases'} churn risk by {(Math.abs(f.shapValue || 0) * 100).toFixed(1)}%
                     </div>
                   </div>
                 ))
-              ) : (
-                <div className="text-secondary small italic">No specific drivers identified.</div>
               )}
             </div>
-          </div>
+        </div>
+      </div>
 
-          {/* Rescue Plan Section */}
-          <div className="col-md-7">
-            <div className="p-3 rounded border border-primary border-opacity-25" style={{ background: "rgba(13, 110, 253, 0.05)" }}>
-              <div className="d-flex justify-content-between align-items-start mb-2">
-                <h6 className="text-uppercase text-primary small fw-bold mb-0">Personalized Rescue Plan</h6>
-                {rescuePlan?.is_ai_generated && (
-                  <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style={{ fontSize: "0.65rem" }}>
-                    <i className="bi bi-stars me-1"></i> {rescuePlan.model_used || "AI Analysis"}
-                  </span>
-                )}
-              </div>
-              
-              {rescuePlan ? (
-                <>
-                  <div className="mb-3">
-                    <div className="small text-secondary mb-1">Core Strategy</div>
-                    <div className="fw-bold text-info">{rescuePlan.strategy}</div>
+      <div className="col-md-6">
+        <div className="card-custom h-100" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
+          <div className="panel-header">
+            <h2 className="panel-title">
+              <i className="bi bi-shield-check me-2 text-accent" style={{ color: 'var(--accent)' }}></i>
+              Rescue Strategy
+            </h2>
+          </div>
+          <p className="text-secondary small mb-4">Personalized recommendations to reduce churn probability.</p>
+          
+          <div className="d-flex flex-column gap-3">
+            {(() => {
+              const raw = prediction.rescuePlan?.script || prediction.strategy;
+              const text = typeof raw === 'string' ? raw : null;
+              if (text) {
+                return text.split('\n').filter(l => l.trim()).map((line, i) => (
+                  <div key={i} className="d-flex gap-3 align-items-start">
+                    <i className="bi bi-check2-circle text-accent mt-1" style={{ color: 'var(--accent)', fontSize: '0.9rem' }}></i>
+                    <div className="small" style={{ lineHeight: 1.5, color: 'var(--text-primary)' }}>{line.replace(/^\d\.\s*/, '')}</div>
                   </div>
-                  <div className="mb-3">
-                    <div className="small text-secondary mb-1">The Plan</div>
-                    <div className="small lh-sm">{rescuePlan.plan}</div>
-                  </div>
-                  <div className="mt-3 pt-3 border-top border-secondary border-opacity-25">
-                    <div className="small text-secondary mb-1 d-flex align-items-center">
-                      <i className="bi bi-chat-left-text me-1"></i> Agent Outreach Script
+                ));
+              }
+              if (Array.isArray(prediction.recommendations) && prediction.recommendations.length > 0) {
+                return prediction.recommendations.map((rec, i) => (
+                  <div key={i} className="d-flex gap-3 align-items-start">
+                    <i className="bi bi-check2-circle text-accent mt-1" style={{ color: 'var(--accent)', fontSize: '0.9rem' }}></i>
+                    <div className="small" style={{ lineHeight: 1.5, color: 'var(--text-primary)' }}>
+                      {typeof rec === 'string' ? rec.replace(/^\d\.\s*/, '') : (rec.action || rec.description || rec.text || JSON.stringify(rec))}
                     </div>
-                    <div className="p-2 rounded bg-dark bg-opacity-50 small italic text-secondary border-start border-3 border-primary">
-                      "{rescuePlan.script}"
-                    </div>
                   </div>
-                </>
+                ));
+              }
+              return null;
+            })()}
+          </div>
+          
+          <div className="mt-auto pt-4">
+            {error && <div className="text-danger extra-small mb-2 text-center">{error}</div>}
+            <button 
+              className={`btn-primary-custom w-100 ${deployed ? 'btn-success-custom' : ''}`}
+              onClick={handleDeploy}
+              disabled={loading || deployed}
+            >
+              {loading ? (
+                <><span className="spinner-border spinner-border-sm me-2"></span>Deploying...</>
+              ) : deployed ? (
+                <><i className="bi bi-check2-circle me-2"></i>Deployed Successfully</>
               ) : (
-                <div className="text-secondary small italic py-4 text-center">
-                  Generating plan based on drivers...
-                </div>
+                'Deploy Campaign'
               )}
-            </div>
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default ReasonAndRescue;
+}

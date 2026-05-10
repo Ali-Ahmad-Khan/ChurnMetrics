@@ -1,198 +1,215 @@
-import { useFetch } from "../hooks/useFetch";
+import { useEffect, useState } from "react";
 import { getAnalytics } from "../services/api";
-import { Bar } from "react-chartjs-2";
+import { useReveal } from "../hooks/useReveal";
 import {
-  Chart as ChartJS,
-  CategoryScale, LinearScale, BarElement,
-  Title, Tooltip, Legend,
-} from "chart.js";
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, Legend
+} from 'recharts';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-const chartOpts = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { labels: { color: "#adb5bd" } },
-  },
-  scales: {
-    x: { ticks: { color: "#adb5bd" }, grid: { color: "rgba(255,255,255,0.05)" } },
-    y: { ticks: { color: "#adb5bd" }, grid: { color: "rgba(255,255,255,0.05)" } },
-  },
+// Colors matching the design tokens
+const COLORS = {
+  accent: '#7c3aed',
+  accentHover: '#6d28d9',
+  secondary: '#8b8aa8',
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  muted: '#55546e'
 };
 
-function ChartCard({ title, icon, children, height = 300 }) {
-  return (
-    <div className="card bg-dark border-secondary h-100">
-      <div className="card-header border-secondary">
-        <h6 className="text-white mb-0">
-          <i className={`bi ${icon} me-2 text-info`}></i>{title}
-        </h6>
-      </div>
-      <div className="card-body" style={{ height }}>
-        {children}
+export default function Analytics() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const revealRef = useReveal();
+
+  useEffect(() => {
+    getAnalytics().then((res) => {
+      console.log("Analytics Response:", res.data);
+      const raw = res.data || {};
+      
+      // Transform Churn by Contract
+      const contractMap = {};
+      (raw.churnByContract || []).forEach(item => {
+        const id = item._id || {};
+        const contract = id.contract || 'Unknown';
+        const churn = id.churn || 'No';
+        if (!contractMap[contract]) contractMap[contract] = { name: contract, active: 0, churned: 0 };
+        if (churn === 'Yes') contractMap[contract].churned = item.count;
+        else contractMap[contract].active = item.count;
+      });
+      
+      // Transform Churn by Internet
+      const internetMap = {};
+      (raw.churnByInternet || []).forEach(item => {
+        const id = item._id || {};
+        const internet = id.internet || 'Unknown';
+        const churn = id.churn || 'No';
+        if (!internetMap[internet]) internetMap[internet] = { name: internet, active: 0, churned: 0 };
+        if (churn === 'Yes') internetMap[internet].churned = item.count;
+        else internetMap[internet].active = item.count;
+      });
+
+      const analyticsData = res.data;
+      
+      // 1. Contract Distribution
+      let contracts = [];
+      if (analyticsData.churnByContract) {
+        // Aggregate from customers
+        const map = {};
+        analyticsData.churnByContract.forEach(item => {
+          const type = item._id.contract;
+          if (!map[type]) map[type] = { name: type, value: 0 };
+          map[type].value += item.count;
+        });
+        contracts = Object.values(map);
+      } else {
+        // Fallback or explicit mapping
+        contracts = (analyticsData.contractData || analyticsData.contract_distribution || []).map(item => ({
+          name: item._id || item.type || 'Unknown',
+          value: item.count || item.value || 0
+        }));
+      }
+
+      // 2. Internet Service Distribution
+      let internet = [];
+      if (analyticsData.churnByInternet) {
+        const map = {};
+        analyticsData.churnByInternet.forEach(item => {
+          const type = item._id.internet;
+          if (!map[type]) map[type] = { name: type, value: 0 };
+          map[type].value += item.count;
+        });
+        internet = Object.values(map);
+      } else {
+        internet = (analyticsData.internetData || analyticsData.internet_service_distribution || []).map(item => ({
+          name: item._id || item.type || 'Unknown',
+          value: item.count || item.value || 0
+        }));
+      }
+
+      // 3. Tenure Distribution
+      const tenure = (analyticsData.tenureDistribution || analyticsData.tenure_distribution || []).map(item => ({
+        name: typeof item._id === 'string' ? item._id : `${item._id}mo`,
+        count: item.count || 0,
+        churned: item.churnCount || item.churned || 0,
+      })).sort((a, b) => parseInt(a.name) - parseInt(b.name));
+
+      setData({
+        ...raw,
+        contractData: Object.values(contractMap).length > 0 ? Object.values(contractMap) : contracts,
+        internetData: Object.values(internetMap).length > 0 ? Object.values(internetMap) : internet,
+        tenureData: tenure,
+        predictionsData: (raw.monthlyPredictions || []).slice().reverse().map(p => ({
+          ...p,
+          name: p._id,
+          count: p.count || 0,
+          churners: p.churners || 0
+        }))
+      });
+      setLoading(false);
+    }).catch(err => {
+      console.error("Analytics fetch failed:", err);
+      setError("Failed to load analytics data. Please ensure the backend and database are active.");
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return (
+    <div className="d-flex justify-content-center align-items-center min-vh-100">
+      <div className="spinner-border text-info"></div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="container mt-5">
+      <div className="alert alert-warning border-0 card-custom shadow-sm">
+        <i className="bi bi-exclamation-triangle me-2"></i>
+        {error}
       </div>
     </div>
   );
-}
 
-export default function Analytics() {
-  const { data, loading, error } = useFetch(getAnalytics);
-
-  if (loading) {
-    return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-info" style={{ width: "3rem", height: "3rem" }}></div>
-        <div className="text-secondary mt-3">Loading analytics...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="alert alert-danger">
-        <i className="bi bi-exclamation-triangle me-2"></i>Failed to load analytics: {error}
-      </div>
-    );
-  }
-
-  // ── Contract chart data ──
-  const contractLabels = [...new Set(data.churnByContract.map((d) => d._id.contract))];
-  const contractChurned = contractLabels.map(
-    (c) => data.churnByContract.find((d) => d._id.contract === c && d._id.churn === "Yes")?.count || 0
-  );
-  const contractStayed = contractLabels.map(
-    (c) => data.churnByContract.find((d) => d._id.contract === c && d._id.churn === "No")?.count || 0
-  );
-
-  // ── Internet chart data ──
-  const internetLabels = [...new Set(data.churnByInternet.map((d) => d._id.internet))];
-  const internetChurned = internetLabels.map(
-    (i) => data.churnByInternet.find((d) => d._id.internet === i && d._id.churn === "Yes")?.count || 0
-  );
-  const internetStayed = internetLabels.map(
-    (i) => data.churnByInternet.find((d) => d._id.internet === i && d._id.churn === "No")?.count || 0
-  );
-
-  // ── Tenure distribution data ──
-  const tenureData = data.tenureDistribution || [];
-  const tenureLabels = tenureData.map((d) =>
-    d._id === "72+" ? "72+" : `${d._id}–${d._id + 12}mo`
-  );
+  const hasData = data && (data.contractData.length > 0 || data.internetData.length > 0 || data.tenureData.length > 0);
 
   return (
-    <div>
-      <h2 className="text-white fw-bold mb-1">
-        <i className="bi bi-graph-up me-2 text-info"></i>Analytics
-      </h2>
-      <p className="text-secondary mb-4">Churn analysis and customer behavior insights</p>
-
-      {/* Row 1: Contract + Internet */}
-      <div className="row g-3 mb-3">
-        <div className="col-md-6">
-          <ChartCard title="Churn by Contract Type" icon="bi-file-earmark-text">
-            <Bar
-              options={chartOpts}
-              data={{
-                labels: contractLabels,
-                datasets: [
-                  { label: "Churned", data: contractChurned, backgroundColor: "#dc3545" },
-                  { label: "Stayed", data: contractStayed, backgroundColor: "#198754" },
-                ],
-              }}
-            />
-          </ChartCard>
-        </div>
-
-        <div className="col-md-6">
-          <ChartCard title="Churn by Internet Service" icon="bi-wifi">
-            <Bar
-              options={chartOpts}
-              data={{
-                labels: internetLabels,
-                datasets: [
-                  { label: "Churned", data: internetChurned, backgroundColor: "#dc3545" },
-                  { label: "Stayed", data: internetStayed, backgroundColor: "#198754" },
-                ],
-              }}
-            />
-          </ChartCard>
+    <div className="reveal" ref={revealRef}>
+      <div className="panel-header mb-4">
+        <div>
+          <h1 className="panel-title fs-2">Deep Analytics</h1>
+          <p className="text-secondary small">Comprehensive breakdown of churn drivers and performance metrics.</p>
         </div>
       </div>
 
-      {/* Row 2: Tenure + Charges */}
-      <div className="row g-3 mb-3">
-        <div className="col-md-8">
-          <ChartCard title="Churn by Customer Tenure" icon="bi-calendar-range">
-            <Bar
-              options={chartOpts}
-              data={{
-                labels: tenureLabels,
-                datasets: [
-                  { label: "Total Customers", data: tenureData.map((d) => d.count), backgroundColor: "rgba(13,202,240,0.4)" },
-                  { label: "Churned", data: tenureData.map((d) => d.churnCount), backgroundColor: "#dc3545" },
-                ],
-              }}
-            />
-          </ChartCard>
+      {!hasData ? (
+        <div className="card-custom text-center py-5">
+          <i className="bi bi-bar-chart text-muted fs-1 mb-3 d-block"></i>
+          <p className="text-secondary">Insufficient data to generate analytics. Start by running some predictions or uploading customer data.</p>
         </div>
-
-        <div className="col-md-4">
-          <div className="card bg-dark border-secondary h-100">
-            <div className="card-header border-secondary">
-              <h6 className="text-white mb-0">
-                <i className="bi bi-currency-dollar me-2 text-info"></i>Avg Charges by Churn Status
-              </h6>
-            </div>
-            <div className="card-body">
-              <table className="table table-dark table-hover mb-0">
-                <thead>
-                  <tr className="text-secondary">
-                    <th>Status</th>
-                    <th>Avg Monthly</th>
-                    <th>Avg Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data.chargesByChurn || []).map((c) => (
-                    <tr key={c._id}>
-                      <td>
-                        <span className={`badge bg-${c._id === "Yes" ? "danger" : "success"}`}>
-                          {c._id === "Yes" ? "Churned" : "Stayed"}
-                        </span>
-                      </td>
-                      <td className="text-white">${c.avgMonthly?.toFixed(2)}</td>
-                      <td className="text-white">${c.avgTotal?.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      ) : (
+        <div className="row g-4 reveal-group">
+          {/* Churn by Contract Type */}
+          <div className="col-lg-6">
+            <div className="card-custom">
+              <h3 className="panel-title mb-4">Churn by Contract</h3>
+              <div style={{ height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.contractData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--bg-surface-2)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                    />
+                    <Legend iconType="circle" />
+                    <Bar dataKey="active" fill={COLORS.success} radius={[4, 4, 0, 0]} name="Active" />
+                    <Bar dataKey="churned" fill={COLORS.danger} radius={[4, 4, 0, 0]} name="Churned" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Model Info */}
-      {data.modelInfo && (
-        <div className="card bg-dark border-secondary">
-          <div className="card-header border-secondary">
-            <h6 className="text-white mb-0">
-              <i className="bi bi-cpu me-2 text-info"></i>Active Model Configuration
-            </h6>
+          {/* Internet Service Impact */}
+          <div className="col-lg-6">
+            <div className="card-custom">
+              <h3 className="panel-title mb-4">Internet Service Impact</h3>
+              <div style={{ height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.internetData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--bg-surface-2)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                    />
+                    <Legend iconType="circle" />
+                    <Bar dataKey="active" fill={COLORS.accent} radius={[4, 4, 0, 0]} name="Active" />
+                    <Bar dataKey="churned" fill={COLORS.warning} radius={[4, 4, 0, 0]} name="Churned" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
-          <div className="card-body">
-            <div className="row g-3">
-              <div className="col-md-3">
-                <small className="text-secondary d-block">Model Type</small>
-                <span className="text-white fw-bold">{data.modelInfo.model_type}</span>
-              </div>
-              <div className="col-md-3">
-                <small className="text-secondary d-block">Optimal Threshold</small>
-                <span className="text-info fw-bold fs-5">{data.modelInfo.optimal_threshold}</span>
-              </div>
-              <div className="col-md-6">
-                <small className="text-secondary d-block">Description</small>
-                <span className="text-white">{data.modelInfo.description}</span>
+
+          {/* Tenure Distribution */}
+          <div className="col-12">
+            <div className="card-custom">
+              <h3 className="panel-title mb-4">Tenure Distribution & Churn Risk</h3>
+              <div style={{ height: 350 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.tenureData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-surface-2)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                    />
+                    <Legend iconType="circle" />
+                    <Line type="monotone" dataKey="count" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Total Customers" />
+                    <Line type="monotone" dataKey="churned" stroke={COLORS.danger} strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Churned" />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
