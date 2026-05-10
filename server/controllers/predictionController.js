@@ -68,10 +68,12 @@ const getPredictions = async (req, res, next) => {
     const skip = (page - 1) * limit;
     const riskFilter = req.query.risk;
     const reviewFilter = req.query.reviewStatus;
+    const customerID = req.query.customerID;
 
     const filter = {};
     if (riskFilter) filter.riskLabel = riskFilter;
     if (reviewFilter) filter.reviewStatus = reviewFilter;
+    if (customerID) filter.customerID = customerID;
 
     const [predictions, total] = await Promise.all([
       Prediction.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),

@@ -6,3 +6,24 @@ models/
 
 node_modules/
 __pycache__/
+
+# Agent / IDE config files (not for deployment)
+CLAUDE.md
+.claude.json
+.claude/
+.mcp.json
+antigravity_redesign_prompt.md
+
+# Temporary / scratch files
+scratch/
+fastapi.log
+server/server.log
+test_llm.py
+
+# Reports / documents (not source code)
+REPORT.md
+ChurnMetrics_Report.docx
+
+# Debug / mockup images
+client/public/dashboard-actual.png
+client/public/dashboard-mockup*.png

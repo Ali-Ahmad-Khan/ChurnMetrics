@@ -1,102 +1,105 @@
-body {
-  background-color: #1a1a2e !important;
-  color: #e0e0e0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+/* === SPECIFIC OVERRIDES === */
+
+/* Table overrides */
+.table-custom {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.bg-dark {
-  background-color: #1a1a2e !important;
+.table-custom th {
+  text-align: left;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
 }
 
-.card.bg-dark {
-  background-color: #16213e !important;
-  border-radius: 12px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.table-custom td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.95rem;
 }
 
-.card.bg-dark:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(13, 202, 240, 0.1);
+.table-custom tr:hover {
+  background: var(--bg-surface-2);
 }
 
-.card-header {
-  background-color: rgba(255, 255, 255, 0.03) !important;
-  border-radius: 12px 12px 0 0 !important;
-}
-
-.navbar {
-  background-color: #0f3460 !important;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-}
-
-.nav-link {
-  transition: color 0.2s ease, background-color 0.2s ease;
+/* Forms */
+.form-input-custom {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
   border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  width: 100%;
 }
 
-.nav-link:hover {
-  background-color: rgba(13, 202, 240, 0.1);
+.form-input-custom:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.nav-link.active {
-  background-color: rgba(13, 202, 240, 0.15) !important;
+/* Badges */
+.badge-custom {
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.btn-info {
-  background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
-  border: none;
-  transition: all 0.3s ease;
+.badge-success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.badge-warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.badge-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.badge-info { background: var(--accent-soft); color: var(--accent); }
+
+/* Range Slider */
+.form-range::-webkit-slider-thumb {
+  background: var(--accent) !important;
+  box-shadow: 0 0 10px var(--accent-soft);
+  border: 2px solid white;
 }
 
-.btn-info:hover {
-  background: linear-gradient(135deg, #0aa2c0, #088ba3);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(13, 202, 240, 0.3);
+.form-range::-moz-range-thumb {
+  background: var(--accent) !important;
+  box-shadow: 0 0 10px var(--accent-soft);
+  border: 2px solid white;
 }
 
-.badge {
-  font-weight: 500;
-  letter-spacing: 0.5px;
+.custom-range {
+  height: 6px !important;
+  background: var(--border-subtle) !important;
+  border-radius: 5px;
 }
 
-.table-dark {
-  --bs-table-bg: transparent;
-  --bs-table-hover-bg: rgba(13, 202, 240, 0.05);
+/* Utilities */
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
 }
 
-.form-control, .form-select {
-  background-color: #0d1b2a !important;
-  border-color: #2a3f5f !important;
-  color: #e0e0e0 !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+.glow-effect:hover {
+  box-shadow: 0 0 20px var(--accent-soft);
 }
 
-.form-control:focus, .form-select:focus {
-  border-color: #0dcaf0 !important;
-  box-shadow: 0 0 0 0.2rem rgba(13, 202, 240, 0.15) !important;
-}
-
-.progress {
-  background-color: #2a3f5f;
-  border-radius: 10px;
-}
-
-.spinner-border.text-info {
-  width: 3rem;
-  height: 3rem;
-}
-
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a1a2e;
+  background: var(--bg-base);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a3f5f;
+  background: var(--border);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a5f8f;
+  background: var(--text-muted);
 }

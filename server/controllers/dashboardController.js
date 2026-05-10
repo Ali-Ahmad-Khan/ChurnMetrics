@@ -13,6 +13,7 @@ const getDashboardSummary = async (req, res, next) => {
       predictedChurners,
       recentPredictions,
       riskDist,
+      revAtRisk,
       aiHealth,
     ] = await Promise.all([
       Customer.countDocuments(),
@@ -23,8 +24,14 @@ const getDashboardSummary = async (req, res, next) => {
       Prediction.aggregate([
         { $group: { _id: "$riskLabel", count: { $sum: 1 } } },
       ]),
+      Prediction.aggregate([
+        { $match: { churnPrediction: 1 } },
+        { $group: { _id: null, total: { $sum: "$inputFeatures.MonthlyCharges" } } }
+      ]),
       fastapi.healthCheck().catch(() => ({ status: "offline", model_loaded: false })),
     ]);
+
+    const revenueAtRisk = revAtRisk[0]?.total || 0;
 
     res.json({
       customers: {
@@ -36,6 +43,7 @@ const getDashboardSummary = async (req, res, next) => {
         total: totalPredictions,
         predictedChurners,
         riskDistribution: riskDist,
+        revenueAtRisk,
       },
       recentPredictions,
       aiEngine: aiHealth,

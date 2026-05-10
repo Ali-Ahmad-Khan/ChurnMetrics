@@ -1,209 +1,236 @@
-import React, { useState, useEffect } from "react";
-import api from "../services/api";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
-} from "recharts";
+import { useState, useRef } from "react";
+import { runSimulation } from "../services/api";
+import { useReveal } from "../hooks/useReveal";
 
-const WhatIf = () => {
-  const [shifts, setShifts] = useState([
-    { feature: "MonthlyCharges", percentage_change: 0 },
-    { feature: "tenure", percentage_change: 0 },
-    { feature: "TotalCharges", percentage_change: 0 }
-  ]);
-  
-  const [results, setResults] = useState(null);
+export default function WhatIf() {
+  const [params, setParams] = useState({
+    MonthlyCharges: 0,
+    tenure: 0,
+    TotalCharges: 0,
+  });
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const revealRef = useReveal();
+  const resultsRef = useRef(null);
 
-  const handlePercentageChange = (feature, value) => {
-    setShifts(prev => prev.map(s => 
-      s.feature === feature ? { ...s, percentage_change: parseFloat(value) } : s
-    ));
-  };
-
-  const runSimulation = async () => {
+  const handleRun = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Filter out zero shifts
-      const activeShifts = shifts.filter(s => s.percentage_change !== 0);
-      const response = await api.post("/whatif/global", { shifts: activeShifts });
-      setResults(response.data);
+      // Build shifts from params. MonthlyCharges and TotalCharges are co-dependent
+      // (TotalCharges ≈ tenure × MonthlyCharges), so a pricing shift must propagate to both
+      // to produce correct logit direction (otherwise LR multicollinearity flips the sign).
+      const shiftMap = { ...params };
+      if (shiftMap.MonthlyCharges !== 0 && shiftMap.TotalCharges === 0) {
+        shiftMap.TotalCharges = shiftMap.MonthlyCharges;
+      }
+
+      const shifts = Object.entries(shiftMap)
+        .filter(([_, value]) => value !== 0)
+        .map(([feature, value]) => ({
+          feature,
+          percentage_change: value
+        }));
+
+      if (shifts.length === 0) {
+        setResult(null);
+        setLoading(false);
+        return;
+      }
+
+      const res = await runSimulation({ shifts });
+      setResult(res.data);
+      
+      // Smooth scroll to results on mobile
+      if (window.innerWidth < 992) {
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
     } catch (err) {
-      setError("Failed to run global simulation. Ensure the AI Engine is connected.");
-      console.error(err);
+      console.error("Simulation error:", err);
+      setError("Failed to run simulation. Ensure the AI engine is active.");
     } finally {
       setLoading(false);
     }
   };
 
-  const resetShifts = () => {
-    setShifts(prev => prev.map(s => ({ ...s, percentage_change: 0 })));
-    setResults(null);
+  const resetParams = () => {
+    setParams({
+      MonthlyCharges: 0,
+      tenure: 0,
+      TotalCharges: 0,
+    });
+    setResult(null);
+    setError(null);
   };
 
-  // Run initial simulation with zero shifts to get baseline
-  useEffect(() => {
-    runSimulation();
-  }, []);
-
-  const chartData = results ? [
-    { name: "Current", count: results.original_churn_count, rate: (results.original_churn_rate * 100).toFixed(1) },
-    { name: "Simulated", count: results.modified_churn_count, rate: (results.modified_churn_rate * 100).toFixed(1) }
-  ] : [];
-
   return (
-    <div className="container-fluid py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="reveal" ref={revealRef}>
+      <div className="panel-header mb-4">
         <div>
-          <h1 className="h3 mb-1 text-gradient">Global Churn Simulation</h1>
-          <p className="text-muted small">Simulate property shifts across the entire customer base using mathematical deduction.</p>
+          <h1 className="panel-title fs-2">Scenario Simulator</h1>
+          <p className="text-secondary small">Mathematically deduce the impact of global feature shifts on your entire customer base using Logit-Shift Deduction.</p>
         </div>
-        <div className="badge bg-primary-soft p-2">
-          <i className="bi bi-cpu-fill me-2"></i>
-          Deductive Inference Mode
-        </div>
+        {result && (
+          <button className="btn-ghost-custom" onClick={resetParams}>
+            <i className="bi bi-arrow-counterclockwise me-1"></i> Reset Scenarios
+          </button>
+        )}
       </div>
 
       <div className="row g-4">
-        {/* Controls Panel */}
         <div className="col-lg-4">
-          <div className="glass-card p-4 h-100">
-            <h5 className="mb-4">Simulation Parameters</h5>
-            <p className="text-muted small mb-4">
-              Adjust the percentage shift for key customer properties to see the aggregate impact on churn.
-            </p>
-
-            {shifts.map((s) => (
-              <div key={s.feature} className="mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <label className="form-label mb-0 fw-bold">{s.feature}</label>
-                  <span className={`badge ${s.percentage_change >= 0 ? "bg-success" : "bg-danger"}`}>
-                    {s.percentage_change > 0 ? "+" : ""}{s.percentage_change}%
+          <div className="card-custom h-100 shadow-sm border-0" style={{ background: 'var(--bg-surface)' }}>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h2 className="panel-title mb-0">Global Shifts (%)</h2>
+              <i className="bi bi-info-circle text-muted" title="Adjust global feature distributions to simulate market changes"></i>
+            </div>
+            
+            <div className="d-flex flex-column gap-4">
+              <div className="param-group">
+                <label className="form-label small text-secondary fw-bold d-flex justify-content-between">
+                  Monthly Charges (Pricing)
+                  <span className={params.MonthlyCharges > 0 ? 'text-danger' : params.MonthlyCharges < 0 ? 'text-success' : 'text-accent'}>
+                    {params.MonthlyCharges > 0 ? '+' : ''}{params.MonthlyCharges}%
                   </span>
-                </div>
-                <input
-                  type="range"
-                  className="form-range"
-                  min="-50"
-                  max="50"
-                  step="1"
-                  value={s.percentage_change}
-                  onChange={(e) => handlePercentageChange(s.feature, e.target.value)}
+                </label>
+                <input 
+                  type="range" className="form-range custom-range" min="-30" max="30" step="1"
+                  value={params.MonthlyCharges} 
+                  onChange={(e) => setParams({...params, MonthlyCharges: Number(e.target.value)})} 
                 />
-                <div className="d-flex justify-content-between text-muted x-small">
-                  <span>-50%</span>
-                  <span>0%</span>
-                  <span>+50%</span>
-                </div>
               </div>
-            ))}
 
-            <div className="d-grid gap-2 mt-5">
+              <div className="param-group">
+                <label className="form-label small text-secondary fw-bold d-flex justify-content-between">
+                  Avg Tenure (Retention)
+                  <span className={params.tenure > 0 ? 'text-success' : params.tenure < 0 ? 'text-danger' : 'text-accent'}>
+                    {params.tenure > 0 ? '+' : ''}{params.tenure}%
+                  </span>
+                </label>
+                <input 
+                  type="range" className="form-range custom-range" min="-50" max="50" step="5"
+                  value={params.tenure} 
+                  onChange={(e) => setParams({...params, tenure: Number(e.target.value)})} 
+                />
+              </div>
+
+              <div className="param-group">
+                <label className="form-label small text-secondary fw-bold d-flex justify-content-between">
+                  Total Charges (Historical Spend)
+                  <span className={params.TotalCharges > 0 ? 'text-danger' : params.TotalCharges < 0 ? 'text-success' : 'text-accent'}>
+                    {params.TotalCharges > 0 ? '+' : ''}{params.TotalCharges}%
+                  </span>
+                </label>
+                <input
+                  type="range" className="form-range custom-range" min="-30" max="30" step="1"
+                  value={params.TotalCharges}
+                  onChange={(e) => setParams({...params, TotalCharges: Number(e.target.value)})}
+                />
+              </div>
+
+              {error && (
+                <div className="alert alert-danger py-2 small mb-0 border-0">
+                  <i className="bi bi-exclamation-circle me-2"></i> {error}
+                </div>
+              )}
+
               <button 
-                className="btn btn-primary" 
-                onClick={runSimulation}
+                className={`btn-primary-custom w-100 mt-2 ${loading ? 'loading' : ''}`} 
+                onClick={handleRun} 
                 disabled={loading}
               >
-                {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-play-fill me-2"></i>}
-                Run Global Analysis
-              </button>
-              <button className="btn btn-outline-secondary btn-sm" onClick={resetShifts}>
-                Reset Baseline
+                {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-cpu-fill me-2"></i>}
+                {loading ? "Calculating impact..." : "Run Global Simulation"}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Results Panel */}
-        <div className="col-lg-8">
-          {error && (
-            <div className="alert alert-danger glass-card border-danger mb-4">
-              <i className="bi bi-exclamation-triangle-fill me-2"></i>
-              {error}
+        <div className="col-lg-8" ref={resultsRef}>
+          {result ? (
+            <div className="reveal-group visible">
+              <div className="row g-4 mb-4">
+                <div className="col-md-6">
+                  <div className="card-custom text-center py-4 bg-surface-2 border-0">
+                    <div className="text-secondary small mb-1">Baseline Churn Rate</div>
+                    <div className="fs-1 fw-bold">{(result.originalChurnRate * 100).toFixed(1)}%</div>
+                    <div className="text-muted extra-small">{result.originalChurnCount} customers</div>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="card-custom text-center py-4 border-0" style={{ 
+                    border: `1px solid ${result.modifiedChurnRate > result.originalChurnRate ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+                    background: result.modifiedChurnRate > result.originalChurnRate ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.05)'
+                  }}>
+                    <div className="text-secondary small mb-1">Simulated Churn Rate</div>
+                    <div className={`fs-1 fw-bold ${result.modifiedChurnRate > result.originalChurnRate ? 'text-danger' : 'text-success'}`}>
+                      {(result.modifiedChurnRate * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-muted extra-small">{result.modifiedChurnCount} customers</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-custom border-0" style={{ background: 'var(--bg-surface-2)' }}>
+                <div className="d-flex align-items-center mb-3">
+                  <div className="p-2 rounded bg-accent-soft me-3">
+                    <i className="bi bi-graph-up-arrow text-accent"></i>
+                  </div>
+                  <h3 className="panel-title mb-0">Projected Business Impact</h3>
+                </div>
+                
+                <div className="row g-3">
+                  <div className="col-sm-6">
+                    <div className="p-3 rounded bg-surface border border-subtle">
+                      <div className="text-secondary extra-small mb-1 uppercase tracking-wider">Delta (Count)</div>
+                      <div className={`fs-4 fw-bold ${result.changeCount > 0 ? 'text-danger' : 'text-success'}`}>
+                        {result.changeCount > 0 ? '+' : ''}{result.changeCount}
+                      </div>
+                      <div className="text-muted extra-small">Customer difference</div>
+                    </div>
+                  </div>
+                  <div className="col-sm-6">
+                    <div className="p-3 rounded bg-surface border border-subtle">
+                      <div className="text-secondary extra-small mb-1 uppercase tracking-wider">Delta (%)</div>
+                      <div className={`fs-4 fw-bold ${result.changePercentage > 0 ? 'text-danger' : 'text-success'}`}>
+                        {result.changePercentage > 0 ? '+' : ''}{result.changePercentage}%
+                      </div>
+                      <div className="text-muted extra-small">Relative churn shift</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-top border-subtle">
+                  <div className="d-flex align-items-center mb-2">
+                    <i className="bi bi-info-circle-fill text-accent me-2"></i>
+                    <span className="small fw-bold text-secondary">Logit-Shift Methodology</span>
+                  </div>
+                  <p className="text-muted extra-small lh-base mb-0">
+                    {result.mathDetails || "Mathematically deduced using weight-propagation through the stage 1 logistic model."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="card-custom h-100 d-flex flex-column justify-content-center align-items-center text-center p-5 border-0" style={{ background: 'var(--bg-surface-2)', borderStyle: 'dashed !important', borderWidth: '2px !important' }}>
+              <div className="mb-4 p-4 rounded-circle bg-surface shadow-sm">
+                <i className="bi bi-cpu text-accent" style={{ fontSize: '2.5rem' }}></i>
+              </div>
+              <h3 className="panel-title mb-2">Ready for Simulation</h3>
+              <p className="text-muted max-width-400 mx-auto small">
+                Adjust the global parameters on the left and click "Run Global Simulation" to mathematically deduce how market shifts would affect your bottom line.
+              </p>
+              <div className="mt-4 d-flex gap-2">
+                <span className="badge bg-surface-3 text-secondary border border-subtle px-3 py-2">Deductive AI</span>
+                <span className="badge bg-surface-3 text-secondary border border-subtle px-3 py-2">Real-time Inference</span>
+              </div>
             </div>
           )}
-
-          <div className="row g-4 mb-4">
-            <div className="col-md-4">
-              <div className="glass-card p-3 text-center">
-                <p className="text-muted small mb-1">Churn Count Change</p>
-                <h2 className={`mb-0 ${results?.change_count > 0 ? "text-danger" : results?.change_count < 0 ? "text-success" : ""}`}>
-                  {results ? (results.change_count > 0 ? "+" : "") + results.change_count : "--"}
-                </h2>
-                <p className="x-small text-muted mb-0">Total Customers Affected</p>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="glass-card p-3 text-center border-start-highlight">
-                <p className="text-muted small mb-1">Churn Rate Shift</p>
-                <h2 className={`mb-0 ${results?.change_percentage > 0 ? "text-danger" : results?.change_percentage < 0 ? "text-success" : ""}`}>
-                  {results ? (results.change_percentage > 0 ? "+" : "") + results.change_percentage : "--"}%
-                </h2>
-                <p className="x-small text-muted mb-0">Percentage Point Basis</p>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="glass-card p-3 text-center">
-                <p className="text-muted small mb-1">New Global Churn</p>
-                <h2 className="mb-0">
-                  {results ? (results.modified_churn_rate * 100).toFixed(1) : "--"}%
-                </h2>
-                <p className="x-small text-muted mb-0">Estimated Final Rate</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-4 mb-4" style={{ height: "350px" }}>
-            <h5 className="mb-4">Distribution Comparison</h5>
-            {results ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10" />
-                  <XAxis dataKey="name" stroke="#888" axisLine={false} tickLine={false} />
-                  <YAxis stroke="#888" axisLine={false} tickLine={false} unit="%" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: "#1a1c23", border: "1px solid #ffffff20", borderRadius: "8px" }}
-                    cursor={{ fill: "#ffffff05" }}
-                  />
-                  <Bar dataKey="rate" radius={[4, 4, 0, 0]} barSize={60} label={{ position: 'top', fill: '#fff', fontSize: 12, formatter: (val) => `${val}%` }}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === 0 ? "#4361ee" : (results.change_count > 0 ? "#ef233c" : "#2ecc71")} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="d-flex justify-content-center align-items-center h-100">
-                <div className="spinner-border text-primary"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Methodology Box */}
-          <div className="glass-card p-4 bg-primary-soft-dark border-0">
-            <div className="d-flex align-items-center mb-3">
-              <div className="bg-primary p-2 rounded-3 me-3">
-                <i className="bi bi-function text-white"></i>
-              </div>
-              <h6 className="mb-0">Mathematical Implementation Details</h6>
-            </div>
-            <div className="text-muted small">
-              <p className="mb-2">
-                This result has been <strong>deduced by mathematical implementation</strong> using the model's internal coefficients.
-              </p>
-              <div className="bg-dark-soft p-3 rounded mb-3 font-monospace x-small text-light">
-                P_new = Sigmoid( Logit_baseline + Σ ( Weight_j * (Percentage_j * Value_j / Scale_j) ) )
-              </div>
-              <p className="mb-0 italic">
-                {results?.math_details || "Loading methodology documentation..."}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default WhatIf;
+}

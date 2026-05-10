@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "./Login.css";
 
 export default function Login() {
-  const { login, register } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
-
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/dashboard";
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,106 +38,120 @@ export default function Login() {
   };
 
   return (
-    <div
-      className="min-vh-100 d-flex align-items-center justify-content-center"
-      style={{ background: "linear-gradient(135deg, #0a0f1e 0%, #0d1b2a 50%, #0a0f1e 100%)" }}
-    >
-      <div className="w-100" style={{ maxWidth: 420 }}>
+    <div className="login-container" style={{ position: 'relative' }}>
+      <Link
+        to="/"
+        style={{
+          position: 'fixed',
+          bottom: '2rem',
+          right: '2rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.6rem 1.25rem',
+          background: 'var(--bg-surface)',
+          color: 'var(--text-secondary)',
+          border: '1px solid var(--border)',
+          borderRadius: '99px',
+          textDecoration: 'none',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          boxShadow: 'var(--shadow-card)',
+          transition: 'all 0.2s ease',
+          zIndex: 100,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+      >
+        <i className="bi bi-arrow-left"></i>
+        Back to Home
+      </Link>
+      <div className="login-box">
         {/* Logo / Title */}
-        <div className="text-center mb-4">
-          <div className="mb-3">
-            <i className="bi bi-graph-up-arrow" style={{ fontSize: "3rem", color: "#0dcaf0" }}></i>
+        <div className="login-header">
+          <div className="login-icon">
+            <i className="bi bi-activity"></i>
           </div>
-          <h1 className="fw-bold text-white" style={{ fontSize: "1.8rem" }}>ChurnMetrics</h1>
-          <p className="text-secondary">AI-Powered Churn Intelligence Platform</p>
+          <h1 className="login-title">ChurnMetrics</h1>
+          <p className="login-subtitle">AI-Powered Churn Intelligence</p>
         </div>
 
         {/* Card */}
-        <div
-          className="card border-0 p-4"
-          style={{
-            background: "rgba(255,255,255,0.04)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.08) !important",
-            borderRadius: 16,
-            boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
-          }}
-        >
+        <div className="login-card">
           {/* Mode toggle */}
-          <div className="d-flex mb-4 rounded-2 overflow-hidden border border-secondary">
+          <div className="login-mode-toggle">
             <button
               type="button"
-              className={`btn flex-grow-1 rounded-0 ${mode === "login" ? "btn-info" : "btn-dark text-secondary"}`}
+              className={`mode-btn ${mode === "login" ? "active" : ""}`}
               onClick={() => { setMode("login"); setError(null); }}
             >
               Sign In
             </button>
             <button
               type="button"
-              className={`btn flex-grow-1 rounded-0 ${mode === "register" ? "btn-info" : "btn-dark text-secondary"}`}
+              className={`mode-btn ${mode === "register" ? "active" : ""}`}
               onClick={() => { setMode("register"); setError(null); }}
             >
               Create Account
             </button>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="login-form">
             {mode === "register" && (
-              <div className="mb-3">
-                <label className="form-label text-secondary small">Full Name</label>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
                 <input
                   type="text"
                   name="name"
                   value={form.name}
                   onChange={handleChange}
-                  className="form-control bg-dark text-white border-secondary"
-                  placeholder="Jane Smith"
+                  className="form-input"
+                  placeholder="John Doe"
                   required
                 />
               </div>
             )}
 
-            <div className="mb-3">
-              <label className="form-label text-secondary small">Email Address</label>
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                className="form-control bg-dark text-white border-secondary"
+                className="form-input"
                 placeholder="you@company.com"
                 required
               />
             </div>
 
-            <div className="mb-4">
-              <label className="form-label text-secondary small">Password</label>
+            <div className="form-group">
+              <label className="form-label">Password</label>
               <input
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className="form-control bg-dark text-white border-secondary"
-                placeholder={mode === "register" ? "Min. 6 characters" : "••••••••"}
+                className="form-input"
+                placeholder="••••••••"
                 required
                 minLength={6}
               />
             </div>
 
             {error && (
-              <div className="alert alert-danger py-2 mb-3">
+              <div className="login-error">
                 <i className="bi bi-exclamation-triangle me-2"></i>{error}
               </div>
             )}
 
             <button
               type="submit"
-              className="btn btn-info w-100 fw-bold"
-              style={{ height: 46 }}
+              className="login-submit-btn"
               disabled={loading}
             >
               {loading ? (
-                <span className="spinner-border spinner-border-sm me-2"></span>
+                <span className="spinner"></span>
               ) : (
                 <i className={`bi bi-${mode === "login" ? "box-arrow-in-right" : "person-plus"} me-2`}></i>
               )}
@@ -145,17 +161,16 @@ export default function Login() {
             </button>
           </form>
 
-          {mode === "register" && (
-            <p className="text-secondary small text-center mt-3 mb-0">
-              <i className="bi bi-info-circle me-1"></i>
-              The first account registered becomes the <strong className="text-info">admin</strong>.
+          {mode === "login" ? (
+             <p className="login-footer-text">
+               Don't have an account? <span className="link-text" onClick={() => setMode("register")}>Register here</span>
+             </p>
+          ) : (
+            <p className="login-footer-text">
+              Already have an account? <span className="link-text" onClick={() => setMode("login")}>Sign in instead</span>
             </p>
           )}
         </div>
-
-        <p className="text-center text-secondary small mt-3">
-          ChurnMetrics v1.0 · MERN + FastAPI
-        </p>
       </div>
     </div>
   );

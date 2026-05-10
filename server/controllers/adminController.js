@@ -3,6 +3,81 @@ const Customer = require("../models/Customer");
 const fastapi = require("../utils/fastApiClient");
 const { spawn } = require("child_process");
 const path = require("path");
+const fs = require("fs");
+const { parse } = require("csv-parse/sync");
+
+// POST /api/admin/seed — populate database from CSV
+const seedDatabase = async (req, res, next) => {
+  try {
+    const CSV_PATH = path.join(__dirname, "../../data/raw/IBM_telco_churn.csv");
+    
+    if (!fs.existsSync(CSV_PATH)) {
+      return res.status(404).json({ error: "Seed CSV file not found" });
+    }
+
+    // Check if already seeded to prevent duplicates
+    const count = await Customer.countDocuments();
+    if (count > 0 && !req.query.force) {
+      return res.json({ 
+        message: "Database already contains data", 
+        count,
+        hint: "Use ?force=true to seed anyway (may cause duplicates)" 
+      });
+    }
+
+    const csvData = fs.readFileSync(CSV_PATH, "utf-8");
+    const records = parse(csvData, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    });
+
+    const customers = records.map((row) => {
+      const normalize = (val) =>
+        val === "No internet service" || val === "No phone service" ? "No" : val;
+
+      return {
+        customerID: row.customerID,
+        gender: row.gender,
+        SeniorCitizen: parseInt(row.SeniorCitizen) || 0,
+        Partner: row.Partner,
+        Dependents: row.Dependents,
+        tenure: parseInt(row.tenure) || 0,
+        PhoneService: row.PhoneService,
+        MultipleLines: normalize(row.MultipleLines),
+        InternetService: row.InternetService,
+        OnlineSecurity: normalize(row.OnlineSecurity),
+        OnlineBackup: normalize(row.OnlineBackup),
+        DeviceProtection: normalize(row.DeviceProtection),
+        TechSupport: normalize(row.TechSupport),
+        StreamingTV: normalize(row.StreamingTV),
+        StreamingMovies: normalize(row.StreamingMovies),
+        Contract: row.Contract,
+        PaperlessBilling: row.PaperlessBilling,
+        PaymentMethod: row.PaymentMethod,
+        MonthlyCharges: parseFloat(row.MonthlyCharges) || 0,
+        TotalCharges: parseFloat(row.TotalCharges) || 0,
+        Churn: row.Churn,
+      };
+    });
+
+    const result = await Customer.insertMany(customers, { ordered: false });
+
+    await SystemLog.create({
+      type: "seed",
+      severity: "info",
+      message: `Database seeded with ${result.length} customers`,
+    });
+
+    res.json({
+      success: true,
+      count: result.length,
+      message: "Database seeded successfully"
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 // POST /api/admin/drift — run drift detection on a sample of customers
 const checkDrift = async (req, res, next) => {
@@ -43,6 +118,17 @@ const checkDrift = async (req, res, next) => {
     }));
 
     const result = await fastapi.checkDrift(cleanedCustomers);
+
+    // Mock additional fields expected by the frontend that are not provided by the AI engine yet
+    result.history = [
+      { date: "2024-01", accuracy: 0.94 },
+      { date: "2024-02", accuracy: 0.93 },
+      { date: "2024-03", accuracy: 0.92 },
+      { date: "2024-04", accuracy: 0.91 },
+      { date: "2024-05", accuracy: 0.92 }
+    ];
+    result.current_accuracy = 0.92;
+    result.consistency_score = 98.2;
 
     // Log drift result
     if (result.drift_detected) {
@@ -124,7 +210,29 @@ const getSystemInfo = async (req, res, next) => {
   }
 };
 
-module.exports = { checkDrift, getSystemLogs, getSystemInfo, triggerRetrain };
+// POST /api/admin/campaign/deploy — Mock campaign deployment
+const deployCampaign = async (req, res, next) => {
+  try {
+    const { customerID, strategy, rescueAction } = req.body;
+
+    // Log the deployment
+    await SystemLog.create({
+      type: "campaign_deployment",
+      severity: "low",
+      message: `Rescue campaign deployed for customer ${customerID} using strategy: ${strategy}`,
+      metadata: { customerID, strategy, rescueAction, timestamp: new Date() }
+    });
+
+    res.json({
+      success: true,
+      message: `Campaign deployed successfully for ${customerID}`,
+      details: `Incentive: ${rescueAction}`
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 // ── POST /api/admin/retrain ──────────────────────────────────────────────────
 // Spawns "python src/train.py" in the project root, streams stdout/stderr,
@@ -184,3 +292,5 @@ function triggerRetrain(req, res, next) {
     }
   });
 }
+
+module.exports = { seedDatabase, checkDrift, getSystemLogs, getSystemInfo, triggerRetrain, deployCampaign };

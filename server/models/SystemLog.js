@@ -5,7 +5,7 @@ const systemLogSchema = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ["drift_alert", "model_health", "error", "info"],
+      enum: ["drift_alert", "model_health", "error", "info", "campaign_deployment", "seed", "retrain"],
       required: true,
     },
     severity: {

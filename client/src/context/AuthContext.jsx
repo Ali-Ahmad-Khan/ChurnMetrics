@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback } from "react";
-import { loginUser, registerUser } from "../services/api";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { loginUser, registerUser, getMe } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -12,6 +12,32 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
+  const [loading, setLoading] = useState(true);
+
+  // Validate session on mount
+  useEffect(() => {
+    const validateSession = async () => {
+      const token = localStorage.getItem("cm_token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await getMe();
+        setUser(res.data.user || res.data);
+      } catch (err) {
+        console.error("Session validation failed:", err);
+        localStorage.removeItem("cm_token");
+        localStorage.removeItem("cm_user");
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    validateSession();
+  }, []);
 
   const login = useCallback(async (email, password) => {
     const res = await loginUser({ email, password });
@@ -38,7 +64,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAdmin: user?.role === "admin" }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin: user?.role === "admin" }}>
       {children}
     </AuthContext.Provider>
   );
