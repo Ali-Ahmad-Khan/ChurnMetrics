@@ -1,153 +1,103 @@
----
-title: ChurnMetrics
-emoji: 📈
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
-## Assignment 3: Model as a Service
+# 📊 ChurnMetrics MVP
 
-### Overview
+### *Next-Gen Customer Retention & Predictive Analytics Platform*
 
-In this assignment, we built a REST API using FastAPI to serve the Logistic Regression model from Assignment 2. The API accepts customer data in the same format as the IBM Telco dataset, handles preprocessing internally with the saved sklearn Pipeline and returns churn predictions along with probabilities. We also added unit tests for the API and stress tests to check performance.
-
-### What was done in Assignment 3
-
-- Created the `api/` folder with:
-  - `main.py`: The FastAPI app with endpoints for predictions, health checks, and model info.
-  - `schemas.py`: Pydantic models for request/response validation.
-  - `model_loader.py`: For loading the the model once at the server startup.
-  - `__init__.py`: Package maker.
-- Added `tests/test_api.py`: Unit tests for the API using pytest (this the tests schemas, endpoints, and error handling without needing the server).
-- Added `tests/test_stress.py`: Stress tests for latency, throughput, and robustness (this requires the server to be running).
-
-The API normalizes inputs like the training data (e.g., "No internet service" becomes "No") to match the model's expectations.
-
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-EB2027?style=for-the-badge&logo=xgboost&logoColor=white)](https://xgboost.readthedocs.io/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
 ---
 
-### Explanation of How to Run the API and Tests
+## 🚀 The Vision
+**ChurnMetrics** is a production-ready MVP designed to bridge the gap between raw data and actionable customer retention strategies. By combining a high-performance **XGBoost** predictive engine with **SHAP-based explainability** and a sleek **React dashboard**, ChurnMetrics empowers businesses to not just predict *who* will leave, but understand *why*—and simulate how to save them.
 
-For running the whole assignment 3 follow this order from scratch:
+---
 
-**Step 1: Installing the dependencies**
+## ✨ Key Features
+
+### 🧠 Dual-Engine AI Core
+- **Stage 1 (Precision):** High-recall Logistic Regression for initial screening.
+- **Stage 2 (Refinement):** XGBoost "Local Expert" model focused on high-uncertainty bands (0.2 - 0.8 probability).
+- **Explainability:** Integrated **SHAP** values to reveal the top 3 drivers for every single prediction.
+
+### 🎛️ Interactive "What-If" Simulator
+Test retention strategies in real-time. What happens if we offer a 15% discount to all high-risk Fiber Optic users? The simulator recalculates the predicted churn risk instantly.
+
+### 📈 Executive Dashboard
+- **Live Risk Pulse:** Real-time visibility into customer health.
+- **Segment Analysis:** Breakdowns by contract type, tenure, and payment method.
+- **AI Rescue Suggestions:** Generative insights powered by **Google Gemini** to suggest personalized rescue campaigns.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, Custom Vanilla CSS, Lucide Icons |
+| **Orchestrator** | Node.js, Express, MongoDB Atlas |
+| **AI Engine** | FastAPI, XGBoost, Scikit-learn, SHAP |
+| **LLM Integration** | Google Gemini (Insight Generation) |
+| **Deployment** | Docker, Vercel, Uvicorn |
+
+---
+
+## 📁 Project Structure
+
 ```bash
+├── client/          # React + Vite Frontend
+├── server/          # Node.js Express API (Orchestration)
+├── api/             # FastAPI Engine (ML & Simulations)
+├── models/          # Serialized XGBoost & Scalar Models
+├── data/            # Sample Datasets & EDA Notebooks
+├── src/             # Shared Source Code
+└── Dockerfile       # Containerization for AI Engine
+```
+
+---
+
+## 🚦 Getting Started
+
+### 1. Prerequisites
+- Node.js (v18+)
+- Python 3.10+
+- MongoDB Atlas Connection
+
+### 2. Environment Setup
+Create a `.env` in the root directory:
+```env
+# MongoDB
+MONGO_URI=your_mongodb_connection_string
+
+# Gemini AI
+GEMINI_API_KEY=your_api_key
+
+# Ports
+EXPRESS_PORT=5001
+FASTAPI_PORT=8000
+```
+
+### 3. Installation & Launch
+```bash
+# Install and Start AI Engine
 pip install -r requirements.txt
+uvicorn api.main:app --port 8000
+
+# Install and Start Backend
+cd server && npm install && npm run dev
+
+# Install and Start Frontend
+cd ../client && npm install && npm run dev
 ```
-
-
-**Step 2: Starting the API server**
-```bash
-uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-**Step 4: Opening the Swagger UI** in browser: http://127.0.0.1:8000/docs
-- Use the interactive UI to test `/predict` directly in the browser
-
-**Step 5: Running the unit/API tests** (run in a new terminal within project root)
-```bash
-pytest tests/test_api.py
-```
-
-**Step 6: Running the stress tests** (server should still be running from Step 3)
-```bash
-python tests/test_stress.py
-```
-
-**Step 7: Observing the results**
-- Stress test prints the latency stats (including min,max,mean,median,P95) and the throughput 
-
-Example stress test output we got:
-```
-ChurnMetrics API Stress Test
-
-Target: http://127.0.0.1:8000
-
-Sequential Latency Test  for (50 requests):
-  Min:    17.14 ms
-  Max:    84.16 ms
-  Mean:   22.27 ms
-  Median: 18.97 ms
-  P95:    35.94 ms
-
-Throughput Test for (100 requests, 10 workers):
-  Total time:  21.66s
-  Throughput:  4.62 requests/sec
-  Mean latency: 96.77 ms
-  P95 latency:  324.67 ms
-
-Batch Endpoint Latency Test:
-  Batch size    1: 42.52 ms
-  Batch size   10: 19.06 ms
-  Batch size   50: 28.67 ms
-  Batch size  100: 36.65 ms
-
-Malformed Input's Robustness Test:
-  Payload 1: HTTP 422 (expected 422)
-  Payload 2: HTTP 422 (expected 422)
-  Payload 3: HTTP 422 (expected 422)
-  Payload 4: HTTP 422 (expected 422)
-  Payload 5: HTTP 422 (expected 422)
-
-Stress Test Complete
-```
-
-The `--reload` flag enables the server to auto restart on any changes in the code so that we dont have to run it again and again suring development.
-
-Once the server is running, these are the urls used for api validation:
-- **Swagger UI (interactive docs):** http://127.0.0.1:8000/docs
-- **ReDoc UI:** http://127.0.0.1:8000/redoc
-- **OpenAPI JSON:** http://127.0.0.1:8000/openapi.json
 
 ---
 
-### API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Checking if the API and model are ready |
-| GET | `/model-info` | Getting the model type and path |
-| POST | `/predict` | Used for single customer churn prediction |
-| POST | `/predict/batch` | Used for batch prediction (1-500 customers) |
-| POST | `/predict/timed` | Used for single prediction and server-side latency ms |
+## 🖼️ Preview
+![Dashboard Mockup](client/public/dashboard-mockup-final.png)
 
 ---
 
-### Example Request
-```bash
-curl -X POST http://127.0.0.1:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "gender": "Female",
-    "SeniorCitizen": 0,
-    "Partner": "Yes",
-    "Dependents": "No",
-    "tenure": 12,
-    "PhoneService": "Yes",
-    "MultipleLines": "No",
-    "InternetService": "DSL",
-    "OnlineSecurity": "No",
-    "OnlineBackup": "Yes",
-    "DeviceProtection": "No",
-    "TechSupport": "No",
-    "StreamingTV": "No",
-    "StreamingMovies": "No",
-    "Contract": "Month-to-month",
-    "PaperlessBilling": "Yes",
-    "PaymentMethod": "Electronic check",
-    "MonthlyCharges": 65.5,
-    "TotalCharges": 786.0
-  }'
-```
-
-Expected response:
-```json
-{
-  "churn_prediction": 1,
-  "churn_probability": 0.67,
-  "risk_label": "High"
-}
-```
-
-
+## 📝 License
+Built with ❤️ by the ChurnMetrics Team. Distributed under the MIT License.

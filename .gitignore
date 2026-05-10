@@ -27,6 +27,7 @@ ChurnMetrics_Report.docx
 # Binary image assets (HF Spaces requires Xet for binaries - exclude PNGs)
 client/public/dashboard-actual.png
 client/public/dashboard-mockup*.png
+!client/public/dashboard-mockup-final.png
 client/public/assets/*.png
 client/public/images/*.png
 client/src/assets/*.png
