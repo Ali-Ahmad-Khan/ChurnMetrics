@@ -24,6 +24,9 @@ test_llm.py
 REPORT.md
 ChurnMetrics_Report.docx
 
-# Debug / mockup images
+# Binary image assets (HF Spaces requires Xet for binaries - exclude PNGs)
 client/public/dashboard-actual.png
 client/public/dashboard-mockup*.png
+client/public/assets/*.png
+client/public/images/*.png
+client/src/assets/*.png
