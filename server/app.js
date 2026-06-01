@@ -32,6 +32,17 @@ app.use((req, res, next) => {
 });
 
 // ── API Routes ──
+// Ensure DB is connected before handling API requests
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection error:", error);
+    res.status(503).json({ error: "Service unavailable (Database error)" });
+  }
+});
+
 app.use("/api/auth", authRoutes);                          // public
 app.use("/api/customers", protect, customerRoutes);        // protected
 app.use("/api/predictions", protect, predictionRoutes);    // protected

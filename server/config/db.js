@@ -4,17 +4,38 @@ require("dotenv").config({ path: require("path").join(__dirname, "../../.env") }
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "churnmetrics";
 
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(MONGODB_URI, {
-      dbName: MONGODB_DB_NAME,
-    });
-    console.log(`[MongoDB] Connected to ${conn.connection.host}/${MONGODB_DB_NAME}`);
-    return conn;
-  } catch (error) {
-    console.error(`[MongoDB] Connection failed: ${error.message}`);
-    // Don't exit, let the app handle it via health checks or error responses
+  if (cached.conn) {
+    return cached.conn;
   }
+
+  if (!cached.promise) {
+    const opts = {
+      dbName: MONGODB_DB_NAME,
+      bufferCommands: false, // Prevent mongoose buffering timeouts
+      serverSelectionTimeoutMS: 10000,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log(`[MongoDB] Connected to ${mongoose.connection.host}/${MONGODB_DB_NAME}`);
+      return mongoose;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    console.error(`[MongoDB] Connection failed: ${e.message}`);
+    throw e;
+  }
+
+  return cached.conn;
 };
 
 module.exports = connectDB;
