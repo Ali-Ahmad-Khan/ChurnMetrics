@@ -1,3 +1,11 @@
+---
+title: ChurnMetrics
+emoji: 📊
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+---
 # 📊 ChurnMetrics MVP
 
 ### *Next-Gen Customer Retention & Predictive Analytics Platform*
