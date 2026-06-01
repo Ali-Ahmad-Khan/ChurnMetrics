@@ -4,6 +4,11 @@ require("dotenv").config({ path: require("path").join(__dirname, "../../.env") }
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "churnmetrics";
 
+if (!MONGODB_URI) {
+  console.error("FATAL ERROR: MONGODB_URI environment variable is missing. If you are on Hugging Face Spaces, please add it in Settings -> Variables and Secrets.");
+  process.exit(1);
+}
+
 let cached = global.mongoose;
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
