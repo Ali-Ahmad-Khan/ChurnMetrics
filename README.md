@@ -65,15 +65,6 @@ Test retention strategies in real-time. What happens if we offer a 15% discount 
 - Python 3.10+
 - MongoDB Atlas Connection
 
-### 2. Environment Setup
-Create a `.env` in the root directory:
-```env
-# MongoDB
-MONGO_URI=your_mongodb_connection_string
-
-# Gemini AI
-GEMINI_API_KEY=your_api_key
-
 # Ports
 EXPRESS_PORT=5001
 FASTAPI_PORT=8000

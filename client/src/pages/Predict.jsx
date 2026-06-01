@@ -32,7 +32,10 @@ export default function Predict() {
   const revealRef = useReveal();
 
   const handleChange = (e) => {
-    const val = e.target.type === "number" ? Number(e.target.value) : e.target.value;
+    let val = e.target.type === "number" ? Number(e.target.value) : e.target.value;
+    if (e.target.name === "SeniorCitizen") {
+      val = Number(val);
+    }
     setForm({ ...form, [e.target.name]: val });
   };
 
@@ -44,6 +47,7 @@ export default function Predict() {
       setResult(res.data);
     } catch (err) {
       console.error(err);
+      alert("Failed to generate prediction. Ensure AI Engine is online and inputs are valid.");
     } finally {
       setLoading(false);
     }
