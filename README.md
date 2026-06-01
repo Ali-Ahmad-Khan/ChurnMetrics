@@ -1,3 +1,4 @@
+YAML metadata for HuggingFace Build
 ---
 title: ChurnMetrics
 colorFrom: blue
@@ -5,7 +6,7 @@ colorTo: purple
 sdk: docker
 app_port: 7860
 ---
-# 📊 ChurnMetrics MVP
+# ChurnMetrics MVP
 
 ### *Next-Gen Customer Retention & Predictive Analytics Platform*
 
