@@ -1,6 +1,5 @@
 ---
 title: ChurnMetrics
-emoji: 📊
 colorFrom: blue
 colorTo: purple
 sdk: docker
